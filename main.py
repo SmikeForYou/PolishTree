@@ -34,12 +34,12 @@ class Tree:
         else:
             self.root = self.newNode(data=data, root=self.root)
 
-    # /* метод добавления значения в дерево. Каждая итерация анализирует вес потомков справа и слева, там где меньше
+    # /* метод добавления значения в дерево поштучно. Каждая итерация анализирует вес потомков справа и слева, там где меньше
     # - туда и вставляем значение , если веса равны - идём слева направо
     def _put_value(self, data, curent_node):
         if curent_node.left_child and curent_node.right_child:
             if curent_node.left_child.get_weight(curent_node.left_child) > \
-                    curent_node.right_child.get_weight(curent_node.right_child):
+                    curent_node.right_child.get_weight(curent_node.right_child):#оценка веса и соответственно принятие решения
                 return self._put_value(data=data, curent_node=curent_node.right_child)
             else:
                 return self._put_value(data=data, curent_node=curent_node.left_child)
@@ -57,12 +57,12 @@ class Tree:
             self.root = None
             return data
 
-    # /* метод который достаёт значения из дерева, идём в обратном направлении - справа налево и так же ориентируясь
+    # /* метод который достаёт значения из дерева поштучно, идём в обратном направлении - справа налево и так же ориентируясь
     # на веса
     def _extract_value(self, curent_node):
         if curent_node.left_child and curent_node.right_child:
             if curent_node.left_child.get_weight(curent_node.left_child) > \
-                    curent_node.right_child.get_weight(curent_node.right_child):
+                    curent_node.right_child.get_weight(curent_node.right_child): #оценка веса и соответственно принятие решения
                 return self._extract_value(curent_node=curent_node.left_child)
             else:
                 return self._extract_value(curent_node=curent_node.right_child)
@@ -77,14 +77,17 @@ class Tree:
 
 
 def reversed_polish_notation(expr):
+
     def tree_creator(expr):
         pl_list = expr.split(" ")
         pl_list.reverse()
         pl_tree = Tree()
+        # создание дерева из данной польской записи
         for each in pl_list:
             pl_tree.put(each)
         return pl_tree
 
+    #доступные операторы
     OPERATORS = {
         "+": float.__add__,
         "-": float.__sub__,
@@ -97,23 +100,30 @@ def reversed_polish_notation(expr):
     while polish_tree.root is not None:
         val = polish_tree.extract()
         try:
+            #если нет эксепшена значит перед нами цифра и можно помещать её в стек
             val = float(val)
             stack.append(val)
         except Exception:
+            #определяем есть ли полученый из дерева оператор в доступных
             for each in val:
                 if each not in OPERATORS.keys():
                     continue
                 try:
+                    #вычленяем из стака 2 последних операнда
                     operand1 = stack.pop()
                     operand2 = stack.pop()
                 except Exception:
+                    #недостаточно операндов
                     return False
                 try:
+                    #производим оперяцию связаную с найденым оператором
                     res = OPERATORS[each](operand2,operand1)
                 except Exception:
+                    #ошибка деления на ноль
                     return False
                 stack.append(res)
     if len(stack) != 1:
+        #в стеке должено оставатся только одно значение - результат
         return False
     return stack.pop()
 
