@@ -1,4 +1,7 @@
 # /* класс, описывающий само дерево */
+import unittest
+
+
 class Tree:
     def __init__(self, data=None, root=None, left_child=None, right_child=None, parent=None):
         self.root = root  # корень дерева
@@ -43,16 +46,19 @@ class Tree:
         if not curent_node.left_child:
             curent_node.left_child = self.newNode(data=data, parent=curent_node, root=curent_node.root)
         elif not curent_node.right_child:
-            curent_node.right_child = self.newNode(data=data, parent=curent_node,root=curent_node.root)
+            curent_node.right_child = self.newNode(data=data, parent=curent_node, root=curent_node.root)
 
+    # /* обёртка для _extract_value опят же для того что бы не забыть про рут
     def extract(self):
-        if self.root.left_child and self.root.right_child:
+        if self.root.left_child or self.root.right_child:
             return self._extract_value(self.root)
         else:
             data = self.root.data
             self.root = None
             return data
 
+    # /* метод который достаёт значения из дерева, идём в обратном направлении - справа налево и так же ориентируясь
+    # на веса
     def _extract_value(self, curent_node):
         if curent_node.left_child and curent_node.right_child:
             if curent_node.left_child.get_weight(curent_node.left_child) > \
@@ -70,33 +76,64 @@ class Tree:
             return data
 
 
-OPERATORS = {
-    "+": float.__add__,
-    "-": float.__sub__,
-    "*": float.__mul__,
-    "/": float.__truediv__
-}
+def reversed_polish_notation(expr):
+    def tree_creator(expr):
+        pl_list = expr.split(" ")
+        pl_list.reverse()
+        pl_tree = Tree()
+        for each in pl_list:
+            pl_tree.put(each)
+        return pl_tree
 
-test_reversed_notation = "8 2 5 * + 1 3 2 * + 4 - /"
+    OPERATORS = {
+        "+": float.__add__,
+        "-": float.__sub__,
+        "*": float.__mul__,
+        "/": float.__truediv__
+    }
 
-polish_list = test_reversed_notation.split(" ")
-list_len = len(polish_list)
-polish_tree = Tree()
+    stack = []
+    polish_tree = tree_creator(expr)
+    while polish_tree.root is not None:
+        val = polish_tree.extract()
+        try:
+            val = float(val)
+            stack.append(val)
+        except Exception:
+            for each in val:
+                if each not in OPERATORS.keys():
+                    continue
+                try:
+                    operand1 = stack.pop()
+                    operand2 = stack.pop()
+                except Exception:
+                    return False
+                try:
+                    res = OPERATORS[each](operand2,operand1)
+                except Exception:
+                    return False
+                stack.append(res)
+    if len(stack) != 1:
+        return False
+    return stack.pop()
 
-for each in ["1", "2", "3", "4", "5", "6", "7"]:
-    polish_tree.put(each)
 
-print("root = " + polish_tree.root.data)
-print("left child = " + polish_tree.root.left_child.data)
-print("left child _left_child = " + polish_tree.root.left_child.left_child.data)
-print("left child _right_child = " + polish_tree.root.left_child.right_child.data)
-print("right_child = " + polish_tree.root.right_child.data)
-print("right_child _left_child =" + polish_tree.root.right_child.left_child.data)
-print("right_child _right_child = " + polish_tree.root.right_child.right_child.data)
+class NegativeTest(unittest.TestCase):
+    def runTest(self):
+        self.assertFalse(reversed_polish_notation("+"))
+        self.assertFalse(reversed_polish_notation("3 3"))
+        self.assertFalse(reversed_polish_notation("1 + 2 "))
+        self.assertFalse(reversed_polish_notation("1 1 + +"))
 
-print(polish_tree.extract())
-print(polish_tree.extract())
-print(polish_tree.extract())
-print(polish_tree.extract())
-print(polish_tree.extract())
-print(polish_tree.extract())
+
+class PositiveTest(unittest.TestCase):
+    def runTest(self):
+        self.assertEqual(1,reversed_polish_notation("1"))
+        self.assertEqual(3 + 1, reversed_polish_notation("3 1 +"))
+        self.assertEqual(6,reversed_polish_notation("8 2 5 * + 1 3 2 * + 4 - /"))
+
+
+negative = NegativeTest(methodName='runTest').run()
+positive = PositiveTest(methodName='runTest').run()
+print(negative)
+print(positive)
