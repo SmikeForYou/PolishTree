@@ -103,7 +103,3 @@ def random_expression(expression_len):
     #очистка выражения от лишней скобки
     expression_string = remove_bracket(expression_string)
     return expression_string
-
-
-
-print(random_expression())
