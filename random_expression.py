@@ -42,11 +42,11 @@ def random_expression(expression_len):
                 continue
 
             if operator == '^':
-                value1 = round(random.uniform(-10, 10), 2)
-                value2 = round(random.uniform(-10, 10), 2)
+                value1 = round(random.randint(1, 5), 2)
+                value2 = round(random.randint(1, 5), 2)
             else:
-                value1 = round(random.uniform(-100, 1000), 2)
-                value2 = round(random.uniform(-100, 1000), 2)
+                value1 = round(random.uniform(-20, 20), 2)
+                value2 = round(random.uniform(-20, 20), 2)
 
             #рандомная вставка скобки
             s = next(bracket)

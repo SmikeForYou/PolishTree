@@ -100,8 +100,12 @@ def reversed_polish_notation(expr):
             список елементов
             поддержка float, скобок
             """
-            pattern = '\((.+)\)'
+            OPERATORS = SYMBOLS.copy()
+            #удалям закрывающую скобку для правильной интерпритации операторов
+            #после нее
+            del OPERATORS[')']
 
+            pattern = '\((.+)\)'
             expression = expression.replace(' ', '')
             result = []
             number = ''
@@ -113,8 +117,19 @@ def reversed_polish_notation(expr):
                 if i < last_symbol:
                     continue
 
+                #если оператор скобка - добавляем
+                if expression[i] == '(' or expression[i] == ')':
+                    result.append(expression[i])
+                    continue
                 #если елемент - оператор
-                if expression[i] in SYMBOLS:
+                #проверка последнего значения в результуещем списке
+                if len(result) > 0:
+                    last_operator = result[-1] not in OPERATORS
+                else:
+                    last_operator = True
+                #если последнее и текущее значения - операторы, то текущий символ это
+                #часть отрицательного числа
+                if expression[i] in OPERATORS and last_operator:
                     result.append(expression[i])
                     continue
 
@@ -127,7 +142,8 @@ def reversed_polish_notation(expr):
                     перевода в обратную польскую нотацию
                     """
                     if expression[i:i+3] == 'log':
-                        last_symbol = expression.find(')')+1
+                        #поиск закрывающей скобки символьного оператора
+                        last_symbol = expression[i:].find(')') + i + 1
                         log_expr = expression[i:last_symbol]
                         #очистка выражения по паттерну через re
                         values = re.search(pattern=pattern,string=log_expr).group(1)
@@ -157,7 +173,6 @@ def reversed_polish_notation(expr):
                     result.append(number)
 
                 number += expression[i]
-
             return result
 
 
@@ -176,7 +191,6 @@ def reversed_polish_notation(expr):
         stack_vals = []
         polish_string = []
         for element in expression:
-
             #последний елемент в стеке
             if len(stack_vals) > 0:
                 last_stack_operand = stack_vals[-1]
@@ -236,7 +250,9 @@ def reversed_polish_notation(expr):
     }
 
     stack = []
-    polish_tree = tree_creator(translate_to_polish_notation(expr))
+    polish_string = translate_to_polish_notation(expr)
+    #print(polish_string)
+    polish_tree = tree_creator(polish_string)
     while polish_tree.root is not None:
         val = polish_tree.extract()
         try:
@@ -285,7 +301,6 @@ class PositiveTest(unittest.TestCase):
         self.assertEqual(1,reversed_polish_notation("1"))
         self.assertEqual(3 + 1, reversed_polish_notation("3 1 +"))
         self.assertEqual(6,reversed_polish_notation("8 2 5 * + 1 3 2 * + 4 - /"))
-
 
 negative = NegativeTest(methodName='runTest').run()
 positive = PositiveTest(methodName='runTest').run()
