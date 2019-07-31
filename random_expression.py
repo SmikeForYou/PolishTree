@@ -28,29 +28,32 @@ def random_expression():
             operator = random.choice(OPERATORS)
             #если оператор - логарифм или степень
             #ограничение диапазона случайных чисел (избежать больших значений)
-            if operator == 'log' or operator == '^':
+            if operator == 'log':
                 value1 = round(random.uniform(2, 10), 2)
                 value2 = round(random.uniform(0, 10), 2)
-                if operator == 'log':
-                    #если второй оператор логарифма меньши либо равен 1
-                    #берем логарифм по первому оператору (натуральный логарифм)
-                    if value2 <= 1:
-                        yield f'{operator}({value1})'
-                    else:
-                    #иначе берем логарифм по второму значению
-                        yield f'{operator}({value1},{value2})'
-                if operator == '^':
-                    yield f'{value1} {operator} {value2}'
-            else:
-                value1 = round(random.uniform(1, 1000), 2)
-                value2 = round(random.uniform(1, 1000), 2)
+                #если второй оператор логарифма меньши либо равен 1
+                #берем логарифм по первому оператору (натуральный логарифм)
+                if value2 <= 1:
+                    yield f'{operator}({value1})'
+                else:
+                #иначе берем логарифм по второму значению
+                    yield f'{operator}({value1},{value2})'
 
-                #рандомная вставка скобки
-                s = next(bracket)
-                if s == '(':
-                    yield f'{value1} {operator} {s} {value2}'
-                elif s == ')':
-                    yield f'{value1} {s} {operator} {value2}'
+                continue
+
+            if operator == '^':
+                value1 = round(random.uniform(-10, 10), 2)
+                value2 = round(random.uniform(-10, 10), 2)
+            else:
+                value1 = round(random.uniform(-100, 1000), 2)
+                value2 = round(random.uniform(-100, 1000), 2)
+
+            #рандомная вставка скобки
+            s = next(bracket)
+            if s == '(':
+                yield f'{value1} {operator} {s} {value2}'
+            elif s == ')':
+                yield f'{value1} {s} {operator} {value2}'
 
             rnd_lst.pop()
 
@@ -91,3 +94,7 @@ def random_expression():
     #очистка выражения от лишней скобки
     expression_string = remove_bracket(expression_string)
     return expression_string
+
+
+
+print(random_expression())
