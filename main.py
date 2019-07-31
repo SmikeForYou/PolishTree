@@ -1,6 +1,7 @@
 # /* класс, описывающий само дерево */
 import unittest
-
+from math import log, e
+import re
 
 class Tree:
     def __init__(self, data=None, root=None, left_child=None, right_child=None, parent=None):
@@ -79,24 +80,163 @@ class Tree:
 def reversed_polish_notation(expr):
 
     def tree_creator(expr):
-        pl_list = expr.split(" ")
-        pl_list.reverse()
+        #закомичено, уже передается лист
+        #pl_list = expr.split(" ")
+        expr.reverse()
         pl_tree = Tree()
         # создание дерева из данной польской записи
-        for each in pl_list:
+        for each in expr:
             pl_tree.put(each)
         return pl_tree
+
+
+    def translate_to_polish_notation(expression):
+        """
+        функция перевода выражения в обратную польскую строку
+        """
+        def expression_to_list(expression):
+            """
+            функция перевода введенного выражения в
+            список елементов
+            поддержка float, скобок
+            """
+            pattern = '\((.+)\)'
+
+            expression = expression.replace(' ', '')
+            result = []
+            number = ''
+            symb_operator = ''
+            last_symbol = 0
+            #проход по каждому елементу выражения
+            for i in range(0, len(expression)):
+                #пропуск итераций при обработке символьного оператора (например log(x))
+                if i < last_symbol:
+                    continue
+
+                #если елемент - оператор
+                if expression[i] in SYMBOLS:
+                    result.append(expression[i])
+                    continue
+
+                #символьные операторы
+                if expression[i].isalpha():
+                    """
+                    выражение с использованием символьных операторов
+                    вида operator(a, b) транслируются в итоговый лист
+                    в виде [..., a, operator, b, ...] для упрощения
+                    перевода в обратную польскую нотацию
+                    """
+                    if expression[i:i+3] == 'log':
+                        last_symbol = expression.find(')')+1
+                        log_expr = expression[i:last_symbol]
+                        #очистка выражения по паттерну через re
+                        values = re.search(pattern=pattern,string=log_expr).group(1)
+                        values = values.split(',')
+                        #проверка получившегося листа значений
+                        #если длина 1 - добавляем e (натуральный логарифм)
+                        if len(values) == 1:
+                            values.append('log')
+                            values.append(str(e))
+                        elif len(values) == 2:
+                            values.insert(1, 'log')
+                        else:
+                            return False
+
+                        result.extend(values)
+                        continue
+
+                try:
+                    #отлов ексепшена последнего елемента
+                    if expression[i+1] in SYMBOLS:
+                        number += expression[i]
+                        result.append(number)
+                        number = ''
+                        continue
+                except IndexError:
+                    number += expression[i]
+                    result.append(number)
+
+                number += expression[i]
+
+            return result
+
+
+        SYMBOLS = {
+            '+': 0,
+            '-': 0,
+            '*': 3,
+            '/': 3,
+            '(': 2,
+            ')': 2,
+            '^': 4,
+            'log':5
+        }
+
+        expression = expression_to_list(expression)
+        stack_vals = []
+        polish_string = []
+        for element in expression:
+
+            #последний елемент в стеке
+            if len(stack_vals) > 0:
+                last_stack_operand = stack_vals[-1]
+            #если елемент не в списке символов - он число
+            #запись в польскую строку и переход на следующий елемент
+            if element not in SYMBOLS:
+                polish_string.append(element)
+                continue
+
+            #если стек пустой или последний/текущий елемент стека "("
+            #добавляем операнд и переходим к следующему елементу
+            if len(stack_vals) == 0 or last_stack_operand == '(' or element == '(':
+                stack_vals.append(element)
+                continue
+
+            #если закрываюшая скобка
+            if element == ')':
+                #если открывающая скобка в стеке
+                #выкидываем стек в польскую строку
+                if '(' in stack_vals:
+                    while len(stack_vals) != 0:
+                        operand = stack_vals.pop()
+                        if operand == '(':
+                            break
+                        polish_string.append(operand)
+                    continue
+                #если открывающая скобки нет в стеке
+                #выражение неправильно
+                else:
+                    return False
+
+            #проверка приоритета операнда с последним в стеке
+            if SYMBOLS[last_stack_operand] >= SYMBOLS[element]:
+                polish_string.append(stack_vals.pop())
+                stack_vals.append(element)
+            else:
+                stack_vals.append(element)
+
+        while len(stack_vals) != 0:
+            polish_string.append(stack_vals.pop())
+
+        return polish_string
+
+
+    def log_func(operand1, operand2):
+        return log(operand1, operand2)
+
 
     #доступные операторы
     OPERATORS = {
         "+": float.__add__,
         "-": float.__sub__,
         "*": float.__mul__,
-        "/": float.__truediv__
+        "/": float.__truediv__,
+        "^": float.__pow__,
+        "log": log_func
     }
 
     stack = []
-    polish_tree = tree_creator(expr)
+    polish_tree = tree_creator(translate_to_polish_notation(expr))
     while polish_tree.root is not None:
         val = polish_tree.extract()
         try:
@@ -105,7 +245,11 @@ def reversed_polish_notation(expr):
             stack.append(val)
         except Exception:
             #определяем есть ли полученый из дерева оператор в доступных
+            #не понял, нафига тут цикл for...
+            #поэтому пока перезагружаю each насильно
             for each in val:
+                if each == 'l':
+                    each = 'log'
                 if each not in OPERATORS.keys():
                     continue
                 try:
