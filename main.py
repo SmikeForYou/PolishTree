@@ -2,6 +2,11 @@
 import unittest
 from math import log, e
 import re
+from graphviz import Graph
+from random_expression import random_expression
+#Глобальный счетчик елементов дерева для создания узлов
+#в graphviz
+counter = 1
 
 class Tree:
     def __init__(self, data=None, root=None, left_child=None, right_child=None, parent=None):
@@ -10,6 +15,9 @@ class Tree:
         self.left_child = left_child
         self.right_child = right_child
         self.data = data
+        self.graph = Graph(name='polish_tree', format='pdf') #обект графа для печати
+        self.graph.attr(size='100,100')
+        self.node_name = f'node{counter}' #уникальные имена узлов для правильного построения при одинаковых значениях
 
     # /* функция для добавления узла в дерево. Узел является тем же деревом */
     def newNode(self, data, left_child=None, right_child=None, parent=None, root=None):
@@ -34,10 +42,15 @@ class Tree:
             self._put_value(data=data, curent_node=self.root)
         else:
             self.root = self.newNode(data=data, root=self.root)
+            #создание корневого узла в графе
+            self.graph.node(name=self.node_name, label=data)
+            global counter
+            counter += 1
 
     # /* метод добавления значения в дерево поштучно. Каждая итерация анализирует вес потомков справа и слева, там где меньше
     # - туда и вставляем значение , если веса равны - идём слева направо
     def _put_value(self, data, curent_node):
+        global counter #передача глобального счетчика узлов
         if curent_node.left_child and curent_node.right_child:
             if curent_node.left_child.get_weight(curent_node.left_child) > \
                     curent_node.right_child.get_weight(curent_node.right_child):#оценка веса и соответственно принятие решения
@@ -46,8 +59,16 @@ class Tree:
                 return self._put_value(data=data, curent_node=curent_node.left_child)
         if not curent_node.left_child:
             curent_node.left_child = self.newNode(data=data, parent=curent_node, root=curent_node.root)
+            #создание левого дочернего узла в графе и построение связи с корневым
+            self.graph.node(name=curent_node.left_child.node_name, label=data)
+            self.graph.edge(tail_name=curent_node.node_name, head_name=curent_node.left_child.node_name)
+            counter += 1
         elif not curent_node.right_child:
             curent_node.right_child = self.newNode(data=data, parent=curent_node, root=curent_node.root)
+            #создание правого дочернего узла в графе и построение связи с корневым
+            self.graph.node(name=curent_node.right_child.node_name, label=data)
+            self.graph.edge(tail_name=curent_node.node_name, head_name=curent_node.right_child.node_name)
+            counter += 1
 
     # /* обёртка для _extract_value опят же для того что бы не забыть про рут
     def extract(self):
@@ -75,6 +96,10 @@ class Tree:
             data = curent_node.left_child.data
             curent_node.left_child = None
             return data
+
+    #функция печати графа дерева
+    def print_tree(self):
+        self.graph.view()
 
 
 def reversed_polish_notation(expr):
@@ -253,6 +278,8 @@ def reversed_polish_notation(expr):
     polish_string = translate_to_polish_notation(expr)
     #print(polish_string)
     polish_tree = tree_creator(polish_string)
+    #Печать дерева после создания
+    polish_tree.print_tree()
     while polish_tree.root is not None:
         val = polish_tree.extract()
         try:
